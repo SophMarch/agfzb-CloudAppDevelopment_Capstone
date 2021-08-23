@@ -1,9 +1,13 @@
-<html>
-    <p class="mt-5 h1 text-center">
-        Contacts
-        <ul class="lead mt-3 text-center">
-        <li class="mt-2">Address: Lost road 42</li>
-        <li class="mt-2">Telephone: 123456789</li>
-    </ul>
-    </p>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<main class="container">
+    <h1>Contact Us</h1>
+    <address>
+        <strong>Best Cars Inc.</strong><br>
+        255  Parker Drive<br>
+        Cleveland, Ohio, 44109<br>
+        Phone: 216-635-6350
+    </address>
+</main>
+{% endblock %}
