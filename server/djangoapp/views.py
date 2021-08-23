@@ -87,7 +87,7 @@ def registration_request(request):
 # Update the `get_dealerships` view to render the index page
 def get_dealerships(request):
     if request.method == "GET":
-        url = "https://sm041993.eu-gb.mybluemix.net/api/dealership"
+        url = "https://fb587d76.eu-gb.apigw.appdomain.cloud/api/dealership"
         # Get dealers from the URL
         context = {
             "dealerships": get_dealers_from_cf(url),
@@ -98,8 +98,8 @@ def get_dealerships(request):
 # Create a `get_dealer_details` view to render the reviews of a dealer
 def get_dealer_details(request, dealer_id):
     if request.method == "GET":
-        url_ds = f"https://sm041993.eu-gb.mybluemix.net/api/dealership?dealerId={dealer_id}"
-        url_r = f"https://sm041993.eu-gb.mybluemix.net/api/review?dealerId={dealer_id}"
+        url_ds = f"https://fb587d76.eu-gb.apigw.appdomain.cloud/api/dealership?dealerId={dealer_id}"
+        url_r = f"https://fb587d76.eu-gb.apigw.appdomain.cloud/api/review?dealerId={dealer_id}"
         # Get dealers from the URL
         context = {
             "dealer": get_dealers_from_cf(url_ds)[0],
@@ -134,6 +134,6 @@ def add_review(request, dealer_id):
             review["car_model"] = car.name
             review["car_year"]= car.year.strftime("%Y")
         json_payload = {"review": review}
-        URL = 'https://sm041993.eu-gb.mybluemix.net/api/review'
+        URL = 'https://fb587d76.eu-gb.apigw.appdomain.cloud/api/review'
         post_request(URL, json_payload, dealerId=dealer_id)
     return redirect("djangoapp:dealer_details", dealer_id=dealer_id)
