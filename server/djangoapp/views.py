@@ -1,14 +1,17 @@
+from datetime import datetime
+import logging
+import json
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
-from .models import CarDealer, CarMake, CarModel
-from .restapis import get_dealers_from_cf, get_request, get_dealer_reviews_from_cf
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-from datetime import datetime
-import logging
-import json
+
+
+# from .models import related models
+from .models import CarModel
+from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -33,24 +36,28 @@ def contact(request):
 # Create a `login_request` view to handle sign in request
 def login_request(request):
     context = {}
+    # Handles POST request
     if request.method == "POST":
+        # Get username and password from request.POST dictionary
         username = request.POST['username']
         password = request.POST['psw']
+        # Try to check if provide credential can be authenticated
         user = authenticate(username=username, password=password)
         if user is not None:
+            # If user is valid, call login method to login current user
             login(request, user)
-            return render(request, 'djangoapp/index.html', context)
+            return redirect('djangoapp:index')
         else:
+            # If not, return to login page again
             return render(request, 'djangoapp/index.html', context)
     else:
         return render(request, 'djangoapp/index.html', context)
 
 # Create a `logout_request` view to handle sign out request
 def logout_request(request):
-    context = {}
     print("Log out the user `{}`".format(request.user.username))
     logout(request)
-    return render(request, 'djangoapp/index.html', context)
+    return redirect('djangoapp:index')
 
 # Create a `registration_request` view to handle sign up request
 def registration_request(request):
@@ -67,35 +74,66 @@ def registration_request(request):
             User.objects.get(username=username)
             user_exist = True
         except:
-            logger.debug("{} is new user".format(username))
+            logger.error("New user")
         if not user_exist:
-            user = User.objects.create_user(username=username, 
-                                            first_name=first_name, 
-                                            last_name=last_name,
+            user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,
                                             password=password)
             login(request, user)
-            return render(request, 'djangoapp/index.html', context)
+            return redirect("djangoapp:index")
         else:
-            return render(request, 'djangoapp/index.html', context)
+            context['message'] = "User already exists."
+            return render(request, 'djangoapp/registration.html', context)
 
-
-# Update the `get_dealerships` view to render the index page with a list of dealerships
+# Update the `get_dealerships` view to render the index page
 def get_dealerships(request):
     if request.method == "GET":
-        url = "your-cloud-function-domain/dealerships/dealer-get"
+        url = "https://sm041993.eu-gb.mybluemix.net/api/dealership"
         # Get dealers from the URL
-        dealerships = get_dealers_from_cf(url)
-        # Concat all dealer's short name
-        dealer_names = ' '.join([dealer.short_name for dealer in dealerships])
-        # Return a list of dealer short name
-        return HttpResponse(dealer_names)
+        context = {
+            "dealerships": get_dealers_from_cf(url),
+        }
+        return render(request, 'djangoapp/index.html', context)
 
 
 # Create a `get_dealer_details` view to render the reviews of a dealer
 def get_dealer_details(request, dealer_id):
-    return HttpResponse(dealer_id)
+    if request.method == "GET":
+        url_ds = f"https://sm041993.eu-gb.mybluemix.net/api/dealership?dealerId={dealer_id}"
+        url_r = f"https://sm041993.eu-gb.mybluemix.net/api/review?dealerId={dealer_id}"
+        # Get dealers from the URL
+        context = {
+            "dealer": get_dealers_from_cf(url_ds)[0],
+            "reviews": get_dealer_reviews_from_cf(url_r, dealer_id),
+        }
+        return render(request, 'djangoapp/dealer_details.html', context)
 
 
 # Create a `add_review` view to submit a review
 def add_review(request, dealer_id):
-    pass
+    if request.method == "GET":
+        url = f"https://sm041993.eu-gb.mybluemix.net/api/dealership?dealerId={dealer_id}"
+        # Get dealers from the URL
+        context = {
+            "cars": CarModel.objects.all(),
+            "dealer": get_dealers_from_cf(url)[0],
+        }
+        print(context)
+        return render(request, 'djangoapp/add_review.html', context)
+    if request.method == "POST":
+        form = request.POST
+        review = {
+            "name": f"{request.user.first_name} {request.user.last_name}",
+            "dealership": dealer_id,
+            "review": form["content"],
+            "purchase": form.get("purchasecheck"),
+            }
+        if form.get("purchasecheck"):
+            review["purchasedate"] = datetime.strptime(form.get("purchasedate"), "%m/%d/%Y").isoformat()
+            car = CarModel.objects.get(pk=form["car"])
+            review["car_make"] = car.car_make.name
+            review["car_model"] = car.name
+            review["car_year"]= car.year.strftime("%Y")
+        json_payload = {"review": review}
+        URL = 'https://sm041993.eu-gb.mybluemix.net/api/review'
+        post_request(URL, json_payload, dealerId=dealer_id)
+    return redirect("djangoapp:dealer_details", dealer_id=dealer_id)
