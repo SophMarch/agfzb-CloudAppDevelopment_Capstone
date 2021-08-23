@@ -93,13 +93,14 @@ def get_dealer_reviews_from_cf(url, dealerId):
 # - Call get_request() with specified arguments
 # - Get the returned sentiment label such as Positive or Negative
 def analyze_review_sentiments(text):
-    URL = ''
-    API_KEY = ''
-    params = json.dumps({"text": text, "features": {"sentiment": {}}})
-    response = requests.post(
-        URL, data=params, headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth('apikey', API_KEY)
-    )
-    try:
-        return response.json()['sentiment']['document']['label']
-    except KeyError:
-        return 'unknown'
+    #URL = ''
+    #API_KEY = ''
+    #params = json.dumps({"text": text, "features": {"sentiment": {}}})
+    #response = requests.post(
+    #    URL, data=params, headers={'Content-Type': 'application/json'}, auth=HTTPBasicAuth('apikey', API_KEY)
+    #)
+    #try:
+    #    return response.json()['sentiment']['document']['label']
+    #except KeyError:
+    #    return 'unknown'
+    return 'unknown'
